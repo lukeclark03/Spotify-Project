@@ -9,7 +9,6 @@ import matplotlib.cm as cm  # Import colormap for colors
 
 # given a dictionary of songs and their metadata, apply PCA and return similar tracks
 def song_pca(songs_metadata):
-
     # Convert song metadata to a matrix (rows as songs, columns as features)
     songs_matrix = np.array(list(songs_metadata.values()))
 
