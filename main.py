@@ -7,7 +7,7 @@ def main():
   # login
   spotify = auth_credentials()
   playlist = []
-
+  
   # retrieves metadata of playlist
   print("gathering metadata...")
   # songs_metadata = get_sample_metadata()
