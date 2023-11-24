@@ -7,7 +7,7 @@ Approaches:
   Dimension Reduction Techniques: Techniques like Principal Component Analysis (PCA) or t-SNE can reduce the dimensionality of audio features while retaining essential information. Visualizing these reduced dimensions might reveal underlying patterns that define the playlist's vibe.
 
   Dimension Reduction Techniques:
-    Feature Matrix: Similar to cluster analysis, store audio features in a matrix data structure.
+    Feature Matrix: Store audio features in a matrix data structure.
     Transformed Feature Space: Store transformed or reduced dimensions in arrays or matrices.
     Explained Variance Ratios: Store the explained variance ratios (from PCA) using lists or arrays.
   
