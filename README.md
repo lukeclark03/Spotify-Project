@@ -1,4 +1,4 @@
-Goal: Take in a list of songs, whether through a playlist, etc, and generate a radio based on the contents of this playlist (another list of songs)
+Goal: Take in a playlist and generate a radio based on the contents of this playlist (another list of songs)
 
 Approaches:
 
