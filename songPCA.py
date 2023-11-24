@@ -77,11 +77,6 @@ def song_pca(songs_metadata, playlist_title='playlist'):
     plt.ylabel('PC2')
     plt.show()
 
-
-# Calculations for the graph display
-def calculate_distances(point, mean):
-    return np.linalg.norm(point - mean)
-
 def calculate_similarities(points, mean, cosine_ratio, euclidean_ratio):
     similarity_scores = [(cosine_ratio * cosine_similarity([mean], [point])[0][0]) +
                          (euclidean_ratio * (1 / (1 + np.linalg.norm(mean - point)))) for point in points]
