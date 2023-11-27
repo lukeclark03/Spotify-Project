@@ -15,17 +15,14 @@ def song_pca(songs_metadata, song_ids, playlist_title='playlist', mode='default'
     songs_matrix = np.array(list(songs_metadata.values()))
 
     # Compute mean and variance to compare found songs, add to matrix/dictionary
-    mean_features = np.mean(songs_matrix, axis=0)
-    mean_features = [float(f'{val:.2f}') for val in mean_features] 
-    songs_matrix = np.vstack([mean_features, songs_matrix])
+    if (mode == 'playlist'):
+        mean_features = np.mean(songs_matrix, axis=0)
+        mean_features = [float(f'{val:.2f}') for val in mean_features] 
+        songs_matrix = np.vstack([mean_features, songs_matrix])
 
-    #could be useful
-    variance = np.var(np.array(list(songs_metadata.values())), axis=0).tolist()
-    variance = np.sqrt(variance)
-
-    d_mean_features = {}
-    d_mean_features['reference'] = mean_features
-    songs_metadata = {**d_mean_features, **songs_metadata}
+        d_mean_features = {}
+        d_mean_features['reference'] = mean_features
+        songs_metadata = {**d_mean_features, **songs_metadata}
 
     # Standardize the data (mean=0, variance=1)
     scaler = StandardScaler()
@@ -42,11 +39,10 @@ def song_pca(songs_metadata, song_ids, playlist_title='playlist', mode='default'
 
     # Explained variance ratio
     explained_var_ratio = pca.explained_variance_ratio_
-    ###################################################
 
     # Calculate colors based on distances from mean and similarity ratios
-    cosine_ratio = 0.7
-    euclidean_ratio = 0.3
+    cosine_ratio = math.log(n_components, 10) - 0.1
+    euclidean_ratio = 1-cosine_ratio
     if (mode == 'playlist'):
         mean = songs_pca[0]
     colors, similarity_scores = calculate_similarities(songs_pca, mean, cosine_ratio, euclidean_ratio)  # Using first point as mean
@@ -55,7 +51,13 @@ def song_pca(songs_metadata, song_ids, playlist_title='playlist', mode='default'
     sorted_indices = sorted(range(len(similarity_scores)), key=lambda i: similarity_scores[i], reverse=True)
 
     # Retrieve top similar songs
-    top_similar_indices = sorted_indices[1:21]  # Exclude the reference song itself
+    divisor = 0
+    if (mode == 'playlist'):
+        divisor = 2
+    elif (mode == 'recommend'):
+        divisor = 6
+
+    top_similar_indices = sorted_indices[1:int(len(songs_metadata)/divisor)]  # Exclude the reference song itself
     top_similar_songs = [list(songs_metadata.keys())[index] for index in top_similar_indices]
     song_ids = [song_ids[index-1] for index in top_similar_indices]
 
@@ -74,7 +76,7 @@ def song_pca(songs_metadata, song_ids, playlist_title='playlist', mode='default'
         reference_song_name = list(songs_metadata.keys())[reference_song_index]
         print(f"\n{playlist_title}:")
         for idx, song_index in enumerate(top_similar_indices):
-            print(f"{top_similar_songs[idx]} {similarity_scores[song_index]:.2f} {song_ids[idx]}")
+            print(f"{top_similar_songs[idx]} {similarity_scores[song_index]:.2f}")
         print('\n')
 
     # Plot 2D representation of the data with colors
@@ -83,7 +85,12 @@ def song_pca(songs_metadata, song_ids, playlist_title='playlist', mode='default'
 
     # fonts
     font_paths = [
-        'dependencies/NotoColorEmoji.ttf',
+        'dependencies/HIMALAYA.TTF',
+        'dependencies/MINGLIUB.TTC',
+        'dependencies/SEGUIEMJ.TTF',
+        'dependencies/WINGDING.TTF',
+        'dependencies/OPENSE.TTF',
+        
     ]
     font_props = [fm.FontProperties(fname=path) for path in font_paths]
     plt.rcParams['font.family'] = ['MS Gothic', 'Arial', 'sans-serif']
