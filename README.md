@@ -4,7 +4,7 @@ Approaches:
 
   Feature Distribution: Analyze the distribution of audio features within the playlist. Instead of averaging, identify patterns in feature distributions that indicate dominant characteristics. For example, if most songs have high energy or danceability, it suggests a more upbeat playlist.
 
-  Dimension Reduction Techniques:   
+  Dimension Reduction Techniques:     
     Principal Component Analysis (PCA): can reduce the dimensionality of audio features while retaining essential information. Visualizing these reduced dimensions reveal underlying patterns that define the playlist's vibe.  
     Feature Matrix: Store audio features in a matrix data structure.  
     Transformed Feature Space: Store transformed or reduced dimensions in arrays or matrices.  
