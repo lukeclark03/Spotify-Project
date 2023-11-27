@@ -1,19 +1,21 @@
 from authorize import auth_credentials
-from songInfo import get_song_info, get_playlist_tracks, re, get_random_track_ids, get_sample_metadata, get_track_recommendations, exponential_backoff
+from songInfo import get_song_info, get_playlist_tracks, get_track_recommendations, exponential_backoff
 from songPCA import song_pca
-import time, sys
+import time, sys, re
 
 def is_spotify_playlist(input_string):
     pattern = r'^(spotify:|https://open.spotify.com/)(playlist|user/.+/playlist)/[a-zA-Z0-9]+(\?.*)?$'
     return bool(re.match(pattern, input_string))
 
 def main():
+  start_time = time.time()
   # login
   spotify = auth_credentials()
 
   # Replace 'YOUR_PLAYLIST_ID' with the link to the spotify playlist
   # Extracted ID from the playlist URL
-  playlist_id = input("Your playlist link: ")
+  # playlist_id = input("Your playlist link: ")
+  playlist_id = 'https://open.spotify.com/playlist/4R2IFs0KwORgbid0NWArbO?si=c738865515d54628'
 
   if is_spotify_playlist(playlist_id):
 
@@ -24,13 +26,17 @@ def main():
 
       # Rank song IDs along with songs_metadata by similarity
       similar_songs, mean, n_components = song_pca(songs_metadata, song_ids, playlist_title, 'playlist') # n_comp = 4*log(track num) cosine = 0.7, euclidean = 0.3
-      print("The council has determined your taste...")
+      print("Determined your taste...")
 
       # Gets recommendations 2 standard deviations from the mean, using the calculated top similar tracks in the playlist
-      print('Begging Spotify API to not rate limit me...')
+      print('Asking Spotify API to not rate limit me...')
       track_ids = list(similar_songs.values())
       rec_metadata, rec_ids = get_track_recommendations(spotify, track_ids, mean)
       rec_songs, mean, n_components = song_pca(rec_metadata, rec_ids, f'{playlist_title} radio', 'recommend', mean, n_components)
+      end_time = time.time()  # Record the end time
+      elapsed_time = end_time - start_time  # Calculate elapsed time
+      
+      print(f"Program execution time: {elapsed_time:.2f} seconds")
       
 
   else:
