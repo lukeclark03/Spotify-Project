@@ -1,7 +1,5 @@
-import re
-import time, random
+import time, random, re
 from collections import OrderedDict
-from songPCA import song_pca
 
 # Function to get metadata and audio features for a list of searched (song, artist)
 def get_song_info(spotify, playlist, batch, mode='default'):
@@ -99,10 +97,10 @@ def get_track_recommendations(spotify, playlist, mean):
 
     results = []
 
-    #print("Now we're in the hands of spotify...")
     for track in playlist:
         # returns 20 recommendations [result] for each track, keeps within the confines of the playlist traits
-        result = spotify.recommendations(seed_tracks=[track], limit=4)
+        time.sleep(0.5)
+        result = spotify.recommendations(seed_tracks=[track], limit=12)
         for track in result['tracks']:
             results.append(track)
 
@@ -115,7 +113,7 @@ def get_audio_features(spotify, track_ids):
 # Function to handle exponential backoff for Spotify API rate limits
 def exponential_backoff(request_function, *args, **kwargs):
     retries = 0
-    while retries < 100:  # Maximum number of retries
+    while retries < 5:  # Maximum number of retries
         try:
             return request_function(*args, **kwargs)
         except Exception as e:
@@ -148,65 +146,3 @@ def get_sample_metadata():
         songs_metadata[song_name] = features
 
     return songs_metadata
-
-# Function to retrieve random track IDs to a specified amount
-def get_random_track_ids(spotify, num_tracks):
-    track_ids = []
-    track_info = []
-    songs_processed = 0
-
-    while songs_processed < num_tracks:
-
-        results = spotify.search(q="ok", limit=50, offset=offset, type='track')
-        tracks = results['tracks']['items']
-        
-        for track in tracks:
-            track_ids.append(track['id'])
-            track_name = track['name']
-            artist_names = [artist['name'] for artist in track['artists']]
-            artists = ', '.join(artist_names)               
-            track_labels = (track_name, artists, track['popularity'])
-            track_info.append(track_labels)
-            if len(track_ids) >= num_tracks:
-                break
-        
-            audio_features = get_audio_features(spotify, track_ids)
-
-        # Loop through both track_info and audio_features using zip
-        for track_info_item, audio_feature in zip(track_info, audio_features):
-            # Extract track details from track_info
-            track_name = track_info_item[0]
-            artists = track_info_item[i]
-
-            # Create the current_song string
-            current_song = f"{track_name} - {artists}"
-
-            # Process audio features for each track in the batch
-            feature_data = [
-                track_info_item[2],  # popularity
-                audio_feature['danceability'],
-                audio_feature['energy'],
-                audio_feature['key'],
-                audio_feature['loudness'],
-                audio_feature['speechiness'],
-                audio_feature['acousticness'],
-                audio_feature['instrumentalness'],
-                audio_feature['liveness'],
-                audio_feature['valence'],
-                audio_feature['tempo'],
-                audio_feature['time_signature']
-            ]
-
-            song_data = f"{current_song}\n{feature_data}\n"
-            with open("song_data.txt", "a") as file:  # Open file in append mode
-                file.write(song_data)
-
-            songs_processed += 1
-            # Update progress every 5 seconds
-            current = time.time()
-            if current - start > 5:
-                print(f"Processed {songs_processed} songs")
-                start = current
-            track_info = []
-
-        track_ids = []
