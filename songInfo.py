@@ -1,36 +1,36 @@
 import re
 import time, random
 from collections import OrderedDict
+from songPCA import song_pca
 
 # Function to get metadata and audio features for a list of searched (song, artist)
-def get_song_info(spotify, playlist, batch, mode): # gathers info for the playlist
+def get_song_info(spotify, playlist, batch, mode='default'):
     start = time.time()
-    songs_metadata = {}
-    track_info = [] # song name, artists, popularity
+    songs_metadata = OrderedDict()
+    track_info = []  # song name, artists, popularity
     batch_ids = []
+    song_ids = []
     batches_processed = 0
     songs_processed = 0
 
-    # organize playlist
-
     for song in playlist:
-
         result = []
-        track = []
+        track = None
 
-        if (mode == 'search'):
+        if mode == 'search':
             search_query = f"track:{song[0]} artist:{song[1]}"
             result = spotify.search(q=search_query, type="track", limit=1)
-            track = result['tracks']['items'][0]
-        
-        else: # mode == playlist
-            track = song # results['items']
+            if result['tracks']['items']:
+                track = result['tracks']['items'][0]
 
-        if (mode == 'playlist' or result['tracks']['items']):
+        elif mode == 'playlist':
+            track = song
+
+        if track:
             # Extract song label
             track_name = track['name']
             artist_names = [artist['name'] for artist in track['artists']]
-            artists = ', '.join(artist_names)               
+            artists = ', '.join(artist_names)
             track_labels = (track_name, artists, track['popularity'])
             track_info.append(track_labels)
 
@@ -45,31 +45,31 @@ def get_song_info(spotify, playlist, batch, mode): # gathers info for the playli
                 audio_features = exponential_backoff(get_audio_features, spotify, batch_ids)
 
                 for idx, audio_feature in enumerate(audio_features):
-                    # Retrieve the track details within the batch loop
                     idx += batches_processed * batch
                     current_song = f"{track_info[idx][0]} - {track_info[idx][1]}"
 
+                    song_ids.append(audio_feature['id'])
+
                     # Process audio features for each track in the batch
                     feature_data = [
-                        track_info[idx][2], # popularity
-                        audio_feature['danceability'],
-                        audio_feature['energy'],
-                        audio_feature['key'],
-                        audio_feature['loudness'],
-                        audio_feature['speechiness'],
-                        audio_feature['acousticness'],
-                        audio_feature['instrumentalness'],
-                        audio_feature['liveness'],
-                        audio_feature['valence'],
-                        audio_feature['tempo'],
-                        audio_feature['time_signature']
+                        track_info[idx][2],  # popularity #0
+                        audio_feature['danceability'], #1
+                        audio_feature['energy'], #2
+                        audio_feature['key'], #3
+                        audio_feature['loudness'], #4
+                        audio_feature['speechiness'], #5
+                        audio_feature['acousticness'], #6
+                        audio_feature['instrumentalness'], #7
+                        audio_feature['liveness'], #8
+                        audio_feature['valence'], #9
+                        audio_feature['tempo'], #10
+                        audio_feature['time_signature'] #11
                     ]
-
-                    songs_metadata[current_song] = feature_data 
+                    songs_metadata[current_song] = feature_data
 
                 batch_ids = []  # Clear batch IDs for next batch
                 batches_processed += 1
-        
+
         else:
             print(f"    {song} - {artist} not found!")
 
@@ -79,70 +79,35 @@ def get_song_info(spotify, playlist, batch, mode): # gathers info for the playli
             print(f"    Processed {songs_processed} songs out of {len(playlist)}")
             start = current
 
-    print(f'{songs_processed} out of {len(playlist)} songs found')
-    songs_metadata = OrderedDict(songs_metadata)
-    return songs_metadata
+   # print(f'{songs_processed} out of {len(playlist)} songs found')
+    return songs_metadata, song_ids
 
 def get_playlist_tracks(spotify, playlist_id):
     tracks = []
     results = spotify.playlist_tracks(playlist_id)
+    playlist_info = spotify.playlist(playlist_id)  # Retrieve playlist information
+    playlist_title = playlist_info['name']  # Extract the title of the playlist
 
     for item in results['items']:
         track = item['track']
         tracks.append(track)
     
-    return tracks
+    return tracks, playlist_title
 
 # Function to get recommendations for a playlist
-def get_track_recommendations(spotify, playlist, playlist_data):
-    # preprocess playlist to generate ids, prompts user to sign in
+def get_track_recommendations(spotify, playlist, mean):
+
     results = []
-    i = 0
+
+    #print("Now we're in the hands of spotify...")
     for track in playlist:
-        tracks = []
-        # returns 20 recommendations in form result for each track
-        result = spotify.recommendations(
-        seed_tracks=[track], 
-        limit=20,
-        min_popularity=playlist_data[i][0],
-        max_popularity=playlist_data[i][1],
+        # returns 20 recommendations [result] for each track, keeps within the confines of the playlist traits
+        result = spotify.recommendations(seed_tracks=[track], limit=4)
+        for track in result['tracks']:
+            results.append(track)
 
-        min_danceability=playlist_data[i][0],
-        max_danceability=playlist_data[i][1],
-
-        min_energy=playlist_data[i][0],
-        max_energy=playlist_data[i][1],
-
-        min_loudness=playlist_data[i][0],
-        max_loudness=playlist_data[i][1],
-
-        min_speechiness=playlist_data[i][0],
-        max_speechiness=playlist_data[i][1],
-
-        min_acousticness=playlist_data[i][0],
-        max_acousticness=playlist_data[i][1],
-
-        min_instrumentalness=playlist_data[i][0],
-        max_instrumentalness=playlist_data[i][1],
-
-        min_liveness=playlist_data[i][0],
-        max_liveness=playlist_data[i][1],
-
-        min_valence=playlist_data[i][0],
-        max_valence=playlist_data[i][1],
-
-        min_tempo=playlist_data[i][0],
-        max_tempo=playlist_data[i][1],
-        )
-
-        i += 1
-
-        # r amount = limit
-        for r in result:
-            tracks.append(r['id'])
-        results.append(tracks)
-        
-    return results
+    songs_metadata, song_ids = get_song_info(spotify, results, 100, 'playlist')
+    return songs_metadata, song_ids
 
 def get_audio_features(spotify, track_ids):
     return spotify.audio_features(track_ids)
